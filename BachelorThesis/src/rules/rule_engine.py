@@ -45,6 +45,12 @@ class RuleEngine:
     }
 
     def __init__(self, rules_dir: str = "src/rules/definitions"):
+        # Make the path absolute relative to this file's location
+        if not Path(rules_dir).is_absolute():
+            # Get the directory where this file is located (src/rules/)
+            base_dir = Path(__file__).parent.parent  # goes up to src/
+            rules_dir = str(base_dir / "rules" / "definitions")
+        
         self.rules_dir = Path(rules_dir)
         self.rules: List[Rule] = []
         self.load_rules()
