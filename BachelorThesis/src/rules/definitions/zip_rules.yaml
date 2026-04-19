@@ -1,0 +1,20 @@
+rules:
+  - name: zip_password_protection
+    trigger:
+      artifact_type: archive
+    steps:
+      - tool: zipinfo
+        output_key: archive_info
+      - tool: zip_cracker
+        condition: "archive_info.get('encrypted') == True"
+    priority: high
+
+  - name: nested_archive_detection
+    trigger:
+      file_type: application/zip
+    steps:
+      - tool: unzip
+        args: ["-l"]
+        output_key: contents
+      - tool: exiftool
+    priority: medium

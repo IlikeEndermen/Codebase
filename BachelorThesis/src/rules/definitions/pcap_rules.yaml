@@ -1,0 +1,18 @@
+rules:
+  - name: pcap_credential_extraction
+    trigger:
+      artifact_type: pcap
+    steps:
+      - tool: tcpdump
+        output_key: packets
+      - tool: strings
+        args: ["-t", "d"]
+    priority: high
+  
+  - name: pcap_file_carving
+    trigger:
+      file_type: application/pcap
+    steps:
+      - tool: foremost
+        output_key: carved_files
+    priority: medium

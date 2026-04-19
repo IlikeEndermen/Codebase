@@ -1,0 +1,19 @@
+rules:
+  - name: binary_string_extraction
+    trigger:
+      artifact_type: binary
+    steps:
+      - tool: strings
+        output_key: extracted_strings
+      - tool: entropy_analysis
+    priority: medium
+
+  - name: binary_file_identification
+    trigger:
+      artifact_type: binary
+    steps:
+      - tool: file
+        output_key: file_type
+      - tool: binwalk
+        condition: "file_type != 'data'"
+    priority: high

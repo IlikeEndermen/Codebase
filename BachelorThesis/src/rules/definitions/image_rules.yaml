@@ -1,0 +1,32 @@
+rules:
+  - name: png_steganography
+    trigger:
+      file_type: image/png
+    steps:
+      - tool: exiftool
+        output_key: metadata
+      - tool: zsteg
+        condition: "metadata.get('color_depth') == 8"
+      - tool: steghide
+        args: ["--passphrase", ""]
+    priority: high
+
+  - name: jpeg_steganography
+    trigger:
+      file_type: image/jpeg
+    steps:
+      - tool: exiftool
+        output_key: metadata
+      - tool: steghide
+        args: ["--passphrase", ""]
+    priority: high
+
+  - name: generic_image_analysis
+    trigger:
+      artifact_type: image/*
+    steps:
+      - tool: exiftool
+        output_key: metadata
+      - tool: binwalk
+        output_key: embedded_files
+    priority: medium
