@@ -8,6 +8,8 @@ in order while respecting conditions and building a shared context dict.
 import logging
 import shutil
 import subprocess
+import os
+import glob
 from typing import Any, Dict, List, Optional
 
 from rules.rule_engine import Rule, RuleStep, RuleEngine
@@ -43,8 +45,9 @@ class ToolNotFoundError(RuntimeError):
 class RuleExecutor:
     """Execute a Rule step-by-step, collecting output into a context dict."""
 
-    def __init__(self, timeout: int = TOOL_TIMEOUT) -> None:
+    def __init__(self, timeout: int = TOOL_TIMEOUT, extract_dir: str = "/tmp/bigsister_extract") -> None:
         self.timeout = timeout
+        self.extract_dir = extract_dir
         self._rule_engine = RuleEngine.__new__(RuleEngine)  # reuse helpers only
 
     # ------------------------------------------------------------------ #
@@ -109,6 +112,16 @@ class RuleExecutor:
             if step.output_key:
                 context[step.output_key] = self._parse_output(output)
                 logger.debug(f"{step_label}: stored under '{step.output_key}'")
+                
+                # --- post-process extraction if binwalk extraction was used -----
+                if step.tool == "binwalk" and "-e" in (step.args or []):
+                    logger.info(f"{step_label}: binwalk extraction detected, collecting files...")
+                    extracted_files = self._collect_extracted_files(file_path)
+                    if extracted_files:
+                        context["extracted_files"] = extracted_files
+                        logger.info(f"{step_label}: found {len(extracted_files)} extracted files")
+                    else:
+                        logger.warning(f"{step_label}: no extracted files found")
 
         return context
 
@@ -182,3 +195,57 @@ class RuleExecutor:
     def _evaluate(self, condition: str, context: Dict[str, Any]) -> bool:
         """Delegate condition evaluation to RuleEngine logic."""
         return RuleEngine.evaluate_condition(self._rule_engine, condition, context)
+    def _collect_extracted_files(self, original_file_path: str) -> List[Dict[str, str]]:
+        """
+        After binwalk extraction, find and catalog all extracted files.
+        Returns a list of dicts with 'path' and 'type' keys.
+        """
+        extracted_list = []
+        
+        # Binwalk creates folders with patterns like:
+        # _filename.extracted, _filename-0.extracted, etc.
+        base_name = os.path.basename(original_file_path)
+        
+        # Look for any extracted folder matching the file
+        extract_folder = None
+        if os.path.exists(self.extract_dir):
+            logger.debug(f"Looking for extracted files in: {self.extract_dir}")
+            for entry in os.listdir(self.extract_dir):
+                entry_path = os.path.join(self.extract_dir, entry)
+                # Match both _filename.extracted and _filename-N.extracted patterns
+                if entry.startswith(f"_{base_name}") and os.path.isdir(entry_path):
+                    extract_folder = entry_path
+                    logger.debug(f"Found matching extract folder: {extract_folder}")
+                    break
+        
+        if not extract_folder:
+            logger.warning(f"No extracted folder found for: {base_name} in {self.extract_dir}")
+            return extracted_list
+        
+        # Recursively find all files in extracted folder
+        for root, dirs, files in os.walk(extract_folder):
+            for file in files:
+                file_path = os.path.join(root, file)
+                rel_path = os.path.relpath(file_path, extract_folder)
+                
+                # Determine file type
+                try:
+                    result = subprocess.run(
+                        ["file", "-b", file_path],
+                        capture_output=True,
+                        text=True,
+                        timeout=5
+                    )
+                    file_type = result.stdout.strip()
+                except Exception as e:
+                    file_type = f"unknown (error: {e})"
+                
+                extracted_list.append({
+                    "path": file_path,
+                    "rel_path": rel_path,
+                    "type": file_type
+                })
+                logger.debug(f"Found extracted file: {rel_path} ({file_type})")
+        
+        logger.info(f"Collected {len(extracted_list)} extracted files")
+        return extracted_list

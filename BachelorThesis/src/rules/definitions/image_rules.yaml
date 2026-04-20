@@ -15,7 +15,6 @@ rules:
       - tool: exiftool
         args: ["-DateTimeOriginal", "-CreateDate", "-DateTime", "-FileModifyDate"]
         output_key: timestamps
-        condition: "exif_metadata"
     priority: high
 
   - name: png_lsb_steganography
@@ -38,7 +37,6 @@ rules:
       - tool: steghide
         args: ["info", "-p", ""]
         output_key: steghide_info
-        condition: "metadata"
     priority: high
 
   - name: jpeg_steghide_extraction
@@ -80,7 +78,6 @@ rules:
       - tool: binwalk
         args: ["-e", "-C", "/tmp/bigsister_extract"]
         output_key: binwalk_extraction
-        condition: "binwalk_scan"
     priority: medium
 
   - name: file_type_identification

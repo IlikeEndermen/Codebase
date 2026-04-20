@@ -4,6 +4,7 @@ from tkinter import ttk, filedialog, messagebox
 from PIL import Image, ImageTk
 import os
 from io import StringIO
+from typing import Dict
 
 from rules.rule_engine import RuleEngine
 from rules.rule_executor import RuleExecutor
@@ -178,20 +179,47 @@ class BigSisterGUI(tk.Tk):
             output_buffer.write("Analysis Complete\n")
             output_buffer.write(f"{'=' * 60}\n")
             for k, v in combined.items():
-                output_buffer.write(f"  {k:<25}: {v}\n")
+                if k == "extracted_files":
+                    output_buffer.write(f"\n  📦 Extracted Files:\n")
+                    for extracted in v:
+                        output_buffer.write(f"     • {extracted['rel_path']}\n")
+                        output_buffer.write(f"       Type: {extracted['type']}\n")
+                        output_buffer.write(f"       Path: {extracted['path']}\n")
+                else:
+                    output_buffer.write(f"  {k:<25}: {v}\n")
 
-            self.after(0, self._display_rule_results, output_buffer.getvalue())
+            self.after(0, self._display_rule_results, output_buffer.getvalue(), combined)
 
         except Exception as e:
             error_msg = f"❌ Error during rule analysis: {str(e)}"
-            self.after(0, self._display_rule_results, error_msg)
+            self.after(0, self._display_rule_results, error_msg, {})
 
-    def _display_rule_results(self, results: str):
+    def _display_rule_results(self, results: str, combined: Dict = None):
         """Display rule analysis results in the GUI"""
         self.txt_results.config(state="normal")
         self.txt_results.delete("1.0", "end")
         self.txt_results.insert("end", results)
+        
+        # Add clickable buttons for extracted files if they exist
+        if combined and "extracted_files" in combined:
+            self.txt_results.insert("end", "\n" + "=" * 60 + "\n")
+            self.txt_results.insert("end", "🖱️  Click to Re-Analyze Extracted Files:\n\n")
+            
+            for i, extracted in enumerate(combined["extracted_files"]):
+                # Insert button as text with tag for styling
+                button_text = f"  ▶ {extracted['rel_path']}\n"
+                self.txt_results.insert("end", button_text, f"file_{i}")
+                # Bind click handler
+                self.txt_results.tag_bind(f"file_{i}", "<Button-1>", 
+                    lambda e, p=extracted['path']: self._on_extracted_file_click(p))
+        
         self.txt_results.config(state="disabled")
+    
+    def _on_extracted_file_click(self, file_path: str):
+        """Handle click on extracted file"""
+        self.current_file = file_path
+        self.lbl_file.config(text=f"(extracted) {os.path.basename(file_path)}")
+        self._show_rule_analysis()
 
     def toggle_dark_mode(self):
         """Toggle dark/light mode"""
