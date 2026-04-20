@@ -50,6 +50,24 @@ rules:
         output_key: steghide_info
     priority: high
 
+  - name: png_zip_extraction
+    trigger:
+      file_type: image/png
+    steps:
+      - tool: unzip
+        args: ["-o", "-d", "/tmp/bigsister_extract"]
+        output_key: zip_extraction
+    priority: critical
+
+  - name: foremost_extraction
+    trigger:
+      artifact_type: image
+    steps:
+      - tool: foremost
+        args: ["-o", "/tmp/foremost_extract", "-T"]
+        output_key: foremost_extraction
+    priority: high
+
   - name: jpeg_metadata_analysis
     trigger:
       file_type: image/jpeg
@@ -76,7 +94,7 @@ rules:
       artifact_type: image
     steps:
       - tool: binwalk
-        args: ["-e", "-C", "/tmp/bigsister_extract"]
+        args: ["-M","-e", "-C", "/tmp/bigsister_extract"]
         output_key: binwalk_extraction
     priority: medium
 
