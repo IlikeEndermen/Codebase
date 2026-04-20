@@ -131,6 +131,16 @@ class RuleExecutor:
             arg.replace("{file}", file_path) if isinstance(arg, str) else arg
             for arg in args
         ]
+        
+        # Special handling for steghide and zsteg
+        if executable == "steghide":
+            # steghide info -p <pass> <file>
+            return ["steghide"] + resolved_args + [file_path]
+        elif executable == "zsteg":
+            # zsteg <args> <file>
+            return [executable] + resolved_args + [file_path]
+        
+        # Default: command + args + file
         return [executable] + resolved_args + [file_path]
 
     def _run(self, cmd: List[str], label: str) -> str:
@@ -141,6 +151,7 @@ class RuleExecutor:
                 capture_output=True,
                 text=True,
                 timeout=self.timeout,
+                input="\n"  # Feed newline to steghide to avoid interactive prompt
             )
             output = result.stdout + result.stderr
             if result.returncode != 0:

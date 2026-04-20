@@ -1,32 +1,102 @@
 rules:
-  - name: png_steganography
+  - name: exif_metadata_extraction
+    trigger:
+      artifact_type: image
+    steps:
+      - tool: exiftool
+        args: ["-j", "-n"]
+        output_key: exif_metadata
+    priority: critical
+
+  - name: exif_timestamp_anomaly_detection
+    trigger:
+      artifact_type: image
+    steps:
+      - tool: exiftool
+        args: ["-DateTimeOriginal", "-CreateDate", "-DateTime", "-FileModifyDate"]
+        output_key: timestamps
+        condition: "exif_metadata"
+    priority: high
+
+  - name: png_lsb_steganography
     trigger:
       file_type: image/png
     steps:
       - tool: exiftool
         output_key: metadata
       - tool: zsteg
-        condition: "metadata.get('color_depth') == 8"
-      - tool: steghide
-        args: ["--passphrase", ""]
+        args: ["-a"]
+        output_key: zsteg_analysis
     priority: high
 
-  - name: jpeg_steganography
+  - name: png_steghide_extraction
+    trigger:
+      file_type: image/png
+    steps:
+      - tool: exiftool
+        output_key: metadata
+      - tool: steghide
+        args: ["info", "-p", ""]
+        output_key: steghide_info
+        condition: "metadata"
+    priority: high
+
+  - name: jpeg_steghide_extraction
     trigger:
       file_type: image/jpeg
     steps:
       - tool: exiftool
         output_key: metadata
       - tool: steghide
-        args: ["--passphrase", ""]
+        args: ["info", "-p", ""]
+        output_key: steghide_info
     priority: high
 
-  - name: generic_image_analysis
+  - name: jpeg_metadata_analysis
     trigger:
-      artifact_type: image/*
+      file_type: image/jpeg
     steps:
       - tool: exiftool
-        output_key: metadata
+        args: ["-a"]
+        output_key: full_exif
+      - tool: strings
+        args: ["-t", "d"]
+        output_key: extracted_strings
+    priority: medium
+
+  - name: generic_embedded_file_detection
+    trigger:
+      artifact_type: image
+    steps:
       - tool: binwalk
-        output_key: embedded_files
+        args: ["-v"]
+        output_key: binwalk_scan
+    priority: high
+
+  - name: binwalk_file_extraction
+    trigger:
+      artifact_type: image
+    steps:
+      - tool: binwalk
+        args: ["-e", "-C", "/tmp/bigsister_extract"]
+        output_key: binwalk_extraction
+        condition: "binwalk_scan"
+    priority: medium
+
+  - name: file_type_identification
+    trigger:
+      artifact_type: image
+    steps:
+      - tool: file
+        args: ["-b"]
+        output_key: file_type_info
+    priority: low
+
+  - name: image_entropy_analysis
+    trigger:
+      artifact_type: image
+    steps:
+      - tool: binwalk
+        args: ["-E", "-J"]
+        output_key: entropy_analysis
     priority: medium
