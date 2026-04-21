@@ -71,13 +71,13 @@ def run_rule_based_analysis(file_path: str, verbose: bool = False) -> dict:
     engine   = RuleEngine()
     executor = RuleExecutor()
 
-    mime_type, label = analyzer.analyze(file_path)
+    info = analyzer.analyze(file_path)
     print(f"\n[ File Analysis ]")
-    print(f"  Path      : {file_path}")
-    print(f"  MIME Type : {mime_type}")
-    print(f"  File Type : {label}")
+    print(f"  Path      : {info.path}")
+    print(f"  MIME Type : {info.mime_type}")
+    print(f"  File Type : {info.label}")
 
-    rules = engine.get_applicable_rules(mime_type)
+    rules = engine.get_applicable_rules(info.mime_type)
     print(f"\n[ Applicable Rules ]")
     if not rules:
         print("  ⚠️  No rules matched this artifact type.")

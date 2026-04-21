@@ -4,11 +4,37 @@ rules:
       artifact_type: pcap
     steps:
       - tool: tcpdump
+        args: ["-r", "-A"]
         output_key: packets
       - tool: strings
         args: ["-t", "d"]
+        output_key: extracted_strings
     priority: high
+
+  - name: pcap_flag_string_search
+    trigger:
+      artifact_type: pcap
+    steps:
+    - tool: strings
+      args: ["-n", "4"]
+      output_key: raw_strings
+    - tool: grep
+      args: ["-iE", 'flag\{|CTF\{|HTB\{|THM\{|picoCTF\{|DUCTF\{|PCTF\{|actf\{|bcactf\{|corctf\{|flag\[|key\{|secret\{|[A-Z0-9_]{2,10}\{[A-Za-z0-9_\-]+\}']
+      output_key: flag_candidates
+    priority: critical
   
+  - name: pcap_flag_tshark_search
+    trigger:
+      artifact_type: pcap
+    steps:
+    - tool: tshark
+      args: ["-r", "-z", "follow,tcp,ascii,0", "-q"]
+      output_key: tcp_streams
+    - tool: grep
+      args: ["-iE", 'flag\{|CTF\{|HTB\{|THM\{|picoCTF\{|[A-Z0-9_]{2,10}\{[A-Za-z0-9_\-]+\}']
+      output_key: flag_candidates
+    priority: critical
+
   - name: pcap_file_carving
     trigger:
       file_type: application/pcap
@@ -16,3 +42,12 @@ rules:
       - tool: foremost
         output_key: carved_files
     priority: medium
+
+  - name: pcap_protocol_dissection
+    trigger:
+      artifact_type: pcap
+    steps:
+    - tool: tshark
+      args: ["-r", "-Y", "http || ftp || telnet", "-T", "fields", "-e", "text"]
+      output_key: tshark_output
+    priority: high

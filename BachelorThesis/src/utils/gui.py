@@ -93,7 +93,6 @@ class BigSisterGUI(tk.Tk):
         ttk.Separator(ctrl_frame).pack(fill="x", pady=10)
 
         ttk.Label(ctrl_frame, text="📋 Contributors", style="SubHeader.TLabel").pack(anchor="w", pady=(10, 5))
-        ttk.Button(ctrl_frame, text="View Credits", command=self._show_contributors).pack(fill="x")
 
         # Notebook for tabs
         self.notebook = ttk.Notebook(paned)
@@ -146,16 +145,16 @@ class BigSisterGUI(tk.Tk):
             engine = RuleEngine()
             executor = RuleExecutor()
 
-            mime_type, label = analyzer.analyze(file_path)
+            info = analyzer.analyze(file_path)
             
             output_buffer = StringIO()
             
             output_buffer.write(f"[ File Analysis ]\n")
-            output_buffer.write(f"  Path      : {file_path}\n")
-            output_buffer.write(f"  MIME Type : {mime_type}\n")
-            output_buffer.write(f"  File Type : {label}\n\n")
+            output_buffer.write(f"  Path      : {info.path}\n")
+            output_buffer.write(f"  MIME Type : {info.mime_type}\n")
+            output_buffer.write(f"  File Type : {info.label}\n\n")
 
-            rules = engine.get_applicable_rules(mime_type)
+            rules = engine.get_applicable_rules(info.mime_type)
             output_buffer.write(f"[ Applicable Rules ]\n")
             if not rules:
                 output_buffer.write("  ⚠️  No rules matched this artifact type.\n")
@@ -184,15 +183,23 @@ class BigSisterGUI(tk.Tk):
                     for extracted in v:
                         output_buffer.write(f"     • {extracted['rel_path']}\n")
                         output_buffer.write(f"       Type: {extracted['type']}\n")
-                        output_buffer.write(f"       Path: {extracted['path']}\n")
                 else:
                     output_buffer.write(f"  {k:<25}: {v}\n")
 
-            self.after(0, self._display_rule_results, output_buffer.getvalue(), combined)
+            # Update the text widget with the captured output on the main thread
+            text = output_buffer.getvalue()
+            self.after(0, lambda: self._update_results(text))
 
         except Exception as e:
-            error_msg = f"❌ Error during rule analysis: {str(e)}"
-            self.after(0, self._display_rule_results, error_msg, {})
+            error_msg = str(e)
+            self.after(0, lambda: messagebox.showerror("Analysis Error", f"An error occurred during analysis: {error_msg}"))
+
+    def _update_results(self, text: str):
+        """Update the results text widget"""
+        self.txt_results.config(state="normal")
+        self.txt_results.delete(1.0, tk.END)
+        self.txt_results.insert(tk.END, text)
+        self.txt_results.config(state="disabled")
 
     def _display_rule_results(self, results: str, combined: Dict = None):
         """Display rule analysis results in the GUI"""
@@ -237,73 +244,6 @@ class BigSisterGUI(tk.Tk):
         if self.current_file:
             self.lbl_file.config(text=os.path.basename(file))
             self.btn_analyze.state(["!disabled"])
-
-    def _show_contributors(self):
-        """Show project contributors and credits"""
-        contributors_text = """🎯 BIG SISTER - Rule-Based Forensic Analysis
-═══════════════════════════════════════════════════════════════
-
-👨‍💻 PROJECT CONTRIBUTORS
-══════════════════════════
-
-🏆 Project Leader
-   • [Your Name] - Project Creator & Maintainer
-   • GitHub: @yourusername
-   • Role: Core architecture, GUI development
-
-🔧 Main Developers
-   • [Vlad-Luca Manolescu] - MaaSec CTF Team member
-    • GitHub: https://github.com/IlikeEndermen
-    • Tasks: Rule engine implementation, integration and data parsing
-   • [Alexia-Madalina Cirstea] - MaaSec CTF Team member
-    • GitHub: https://github.com/AlexiaMadalinaCirstea
-    • Tasks: Rule-based forensic analysis development
-
-
-🛠️ TECHNOLOGY STACK
-═══════════════════
-
-🖥️ Frontend:
-   • Python Tkinter - Cross-platform GUI framework
-   • TTK Themes - Modern UI styling
-
-🔍 Analysis Tools:
-   • ExifTool - Comprehensive metadata extraction
-   • Steghide - Steganography detection and extraction
-   • Binwalk - Embedded file signature analysis
-   • Zsteg - LSB steganography detection
-   • And more...
-
-📊 Data Processing:
-   • Rule Engine - YAML-based forensic rules
-   • Rule Executor - Orchestrates tool execution
-   • File Analyzer - MIME type detection
-
-🏆 PROJECT STATS
-════════════════
-
-🎯 Use Cases:
-   • CTF Competitions - Image forensics challenges
-   • Digital Forensics - File analysis
-   • Security Research - Artifact examination
-
-🌍 OPEN SOURCE
-══════════════
-
-📜 License: MIT License
-🔗 Repository: https://github.com/yourusername/BigSister
-🐛 Issues: Report bugs and request features
-🤝 Contributions: Pull requests welcome!
-
-═══════════════════════════════════════════════════════════════
-        Built with ❤️ by the MaaSec CTF Team
-═══════════════════════════════════════════════════════════════"""
-
-        self.txt_contributors.config(state="normal")
-        self.txt_contributors.delete("1.0", "end")
-        self.txt_contributors.insert("end", contributors_text)
-        self.txt_contributors.config(state="disabled")
-        self.notebook.select(self.txt_contributors.master)
 
 
 def startGUI():
