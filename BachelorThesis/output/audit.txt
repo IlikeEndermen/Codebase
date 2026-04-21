@@ -1,0 +1,21 @@
+Foremost version 1.5.7 by Jesse Kornblum, Kris Kendall, and Nick Mikus
+Audit File
+
+Foremost started at Tue Apr 21 17:25:02 2026
+Invocation: foremost /home/lambda/Desktop/Thesis/Codebase/BachelorThesis/trace.pcap 
+Output directory: /home/lambda/Desktop/Thesis/Codebase/BachelorThesis/output
+Configuration file: /etc/foremost.conf
+------------------------------------------------------------------
+File: /home/lambda/Desktop/Thesis/Codebase/BachelorThesis/trace.pcap
+Start: Tue Apr 21 17:25:02 2026
+Length: 104 KB (106715 bytes)
+ 
+Num	 Name (bs=512)	       Size	 File Offset	 Comment 
+
+Finish: Tue Apr 21 17:25:02 2026
+
+0 FILES EXTRACTED
+	
+------------------------------------------------------------------
+
+Foremost finished at Tue Apr 21 17:25:02 2026
