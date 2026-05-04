@@ -1,19 +1,67 @@
 rules:
+  - name: binary_magic_byte_validation
+    trigger:
+      artifact_type: binary
+    steps:
+      - tool: file
+        args: ["-b", "--mime-type"]
+        output_key: actual_mime
+      - tool: magic_validator
+        args: ["--fix", "-o", "/tmp/bigsister_extract/repaired_{filename}"]
+        output_key: magic_repair
+    priority: critical
+
   - name: binary_string_extraction
     trigger:
       artifact_type: binary
     steps:
       - tool: strings
+        args: ["-n", "4"]
         output_key: extracted_strings
-      - tool: entropy_analysis
-    priority: medium
+      - tool: grep
+        args: ["-iE", 'flag\{|CTF\{|HTB\{|THM\{|picoCTF\{|[A-Z0-9_]{2,10}\{[A-Za-z0-9_\-]+\}']
+        output_key: flag_candidates
+    priority: high
 
   - name: binary_file_identification
     trigger:
       artifact_type: binary
     steps:
       - tool: file
+        args: ["-b"]
         output_key: file_type
       - tool: binwalk
+        args: ["-v"]
+        output_key: binwalk_scan
         condition: "file_type != 'data'"
     priority: high
+
+  - name: binary_embedded_extraction
+    trigger:
+      artifact_type: binary
+    steps:
+      - tool: binwalk
+        args: ["-M", "-e", "-C", "/tmp/bigsister_extract"]
+        output_key: binwalk_extraction
+      - tool: foremost
+        args: ["-o", "/tmp/bigsister_extract/foremost_binary", "-T"]
+        output_key: foremost_extraction
+    priority: medium
+
+  - name: binary_entropy_analysis
+    trigger:
+      artifact_type: binary
+    steps:
+      - tool: binwalk
+        args: ["-E", "-J"]
+        output_key: entropy_analysis
+    priority: medium
+
+  - name: binary_hex_dump
+    trigger:
+      artifact_type: binary
+    steps:
+      - tool: xxd
+        args: ["-l", "256"]
+        output_key: hex_dump
+    priority: low

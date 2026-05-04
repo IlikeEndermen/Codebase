@@ -1,20 +1,92 @@
 rules:
-  - name: zip_password_protection
+  - name: zip_magic_byte_validation
+    trigger:
+      artifact_type: archive
+    steps:
+      - tool: file
+        args: ["-b", "--mime-type"]
+        output_key: actual_mime
+      - tool: magic_validator
+        args: ["--fix", "-o", "/tmp/bigsister_extract/repaired_{filename}"]
+        output_key: magic_repair
+    priority: critical
+
+  - name: zip_inspection
     trigger:
       artifact_type: archive
     steps:
       - tool: zipinfo
+        args: ["-v"]
         output_key: archive_info
-      - tool: zip_cracker
-        condition: "archive_info.get('encrypted') == True"
+      - tool: unzip
+        args: ["-l"]
+        output_key: contents
     priority: high
 
-  - name: nested_archive_detection
+  - name: zip_extraction
+    trigger:
+      artifact_type: archive
+    steps:
+      - tool: unzip
+        args: ["-o", "-d", "/tmp/bigsister_extract/zip_contents"]
+        output_key: extraction
+      - tool: strings
+        args: ["-n", "4"]
+        output_key: extracted_strings
+      - tool: grep
+        args: ["-iE", 'flag\{|CTF\{|HTB\{|THM\{|picoCTF\{|[A-Z0-9_]{2,10}\{[A-Za-z0-9_\-]+\}']
+        output_key: flag_candidates
+    priority: high
+
+  - name: zip_password_brute_force
+    trigger:
+      artifact_type: archive
+    steps:
+      - tool: zipinfo
+        args: ["-v"]
+        output_key: archive_info
+      - tool: fcrackzip
+        args: ["-u", "-D", "-p", "/usr/share/wordlists/rockyou.txt"]
+        output_key: cracked_password
+        condition: "'Encryp' in str(archive_info)"
+      - tool: john
+        args: ["--wordlist=/usr/share/wordlists/rockyou.txt"]
+        output_key: john_result
+        condition: "'Encryp' in str(archive_info)"
+    priority: high
+
+  - name: zip_comment_extraction
+    trigger:
+      artifact_type: archive
+    steps:
+      - tool: zipinfo
+        args: ["-z"]
+        output_key: zip_comment
+      - tool: unzip
+        args: ["-z"]
+        output_key: zip_comment_unzip
+    priority: medium
+
+  - name: zip_nested_extraction
     trigger:
       file_type: application/zip
     steps:
       - tool: unzip
         args: ["-l"]
         output_key: contents
+      - tool: 7z
+        args: ["x", "-o/tmp/bigsister_extract/7z_contents", "-y"]
+        output_key: nested_extraction
+    priority: medium
+
+  - name: zip_metadata
+    trigger:
+      artifact_type: archive
+    steps:
       - tool: exiftool
+        args: ["-a", "-j"]
+        output_key: zip_metadata
+      - tool: strings
+        args: ["-n", "4"]
+        output_key: raw_strings
     priority: medium
