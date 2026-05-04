@@ -5,6 +5,7 @@ Executes a single Rule against a target file, walking each RuleStep
 in order while respecting conditions and building a shared context dict.
 """
 
+from http.server import executable
 import logging
 import shutil
 import subprocess
@@ -33,6 +34,9 @@ TOOL_REGISTRY: Dict[str, str] = {
     "7z":        "7z",
     "file":      "file",
     "xxd":       "xxd",
+    "convert":   "convert",
+    "grep":      "grep",
+    "stegseek":   "stegseek",
 }
 
 TOOL_TIMEOUT = 30  # seconds per tool call
@@ -145,6 +149,10 @@ class RuleExecutor:
             for arg in args
         ]
         
+        # File path must come BEFORE args
+        if executable == "convert":
+            return [executable, file_path] + resolved_args
+
         # Special handling for steghide and zsteg
         if executable == "steghide":
             # steghide info -p <pass> <file>

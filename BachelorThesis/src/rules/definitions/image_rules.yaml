@@ -115,3 +115,134 @@ rules:
         args: ["-E", "-J"]
         output_key: entropy_analysis
     priority: medium
+
+  - name: image_stegsolve_analysis
+    trigger:
+      artifact_type: image
+    steps:
+      - tool: convert
+        args: ["-separate", "/tmp/bigsister_extract/Convert_Outputs/channel_%d.png"]
+        output_key: channels
+    priority: medium
+
+  - name: image_steghide_bruteforce
+    trigger:
+      file_type: image/jpeg
+    steps:
+      - tool: steghide
+        args: ["extract", "-sf", "-p", ""]
+        output_key: steghide_empty_pass
+      - tool: stegseek
+        args: ["--wordlist", "/usr/share/wordlists/rockyou.txt"]
+        output_key: steghide_bruteforce
+    priority: medium
+
+      # Splits image into individual R, G, B, A channel files
+  - name: image_channel_split
+    trigger:
+      artifact_type: image
+    steps:
+      - tool: convert
+        args: ["-separate", "/tmp/bigsister_extract/Convert_Outputs/Channels/channel_%d.png"]
+        output_key: channels
+    priority: medium
+
+  # Extracts individual bit planes (0=LSB to 7=MSB) for each channel
+  # Replicates Stegsolve's "Red plane 0", "Green plane 1", etc.
+  - name: image_bit_plane_extraction
+    trigger:
+      artifact_type: image
+    steps:
+      - tool: convert
+        args: ["-channel", "R", "-separate", "-threshold", "50%", "-depth", "1",
+               "/tmp/bigsister_extract/Convert_Outputs/BitPlanes/bitplane_R_lsb.png"]
+        output_key: bitplane_red_lsb
+      - tool: convert
+        args: ["-channel", "G", "-separate", "-threshold", "50%", "-depth", "1",
+               "/tmp/bigsister_extract/Convert_Outputs/BitPlanes/bitplane_G_lsb.png"]
+        output_key: bitplane_green_lsb
+      - tool: convert
+        args: ["-channel", "B", "-separate", "-threshold", "50%", "-depth", "1",
+               "/tmp/bigsister_extract/Convert_Outputs/BitPlanes/bitplane_B_lsb.png"]
+        output_key: bitplane_blue_lsb
+    priority: medium
+
+  # Inverts all colour channels — reveals hidden data in overexposed/underexposed areas
+  - name: image_colour_invert
+    trigger:
+      artifact_type: image
+    steps:
+      - tool: convert
+        args: ["-negate", "/tmp/bigsister_extract/Convert_Outputs/Invert/inverted.png"]
+        output_key: colour_invert
+    priority: medium
+
+  # Boosts contrast to maximum — surfaces faint hidden content
+  - name: image_contrast_boost
+    trigger:
+      artifact_type: image
+    steps:
+      - tool: convert
+        args: ["-contrast-stretch", "0",
+               "/tmp/bigsister_extract/Convert_Outputs/Contrast/contrast_boosted.png"]
+        output_key: contrast_boost
+    priority: medium
+
+  # Equalises histogram — evens out pixel distribution, reveals hidden patterns
+  - name: image_histogram_equalise
+    trigger:
+      artifact_type: image
+    steps:
+      - tool: convert
+        args: ["-equalize",
+               "/tmp/bigsister_extract/Convert_Outputs/Histogram/equalised.png"]
+        output_key: histogram_equalise
+    priority: medium
+
+  # Randomises colour map — equivalent to Stegsolve "Random colour map"
+  # Useful when flag is hidden in palette index values
+  - name: image_colour_remap
+    trigger:
+      artifact_type: image
+    steps:
+      - tool: convert
+        args: ["-modulate", "100,200,180",
+               "/tmp/bigsister_extract/Convert_Outputs/ColourRemap/remapped_1.png"]
+        output_key: colour_remap_1
+      - tool: convert
+        args: ["-modulate", "100,200,60",
+               "/tmp/bigsister_extract/Convert_Outputs/ColourRemap/remapped_2.png"]
+        output_key: colour_remap_2
+      - tool: convert
+        args: ["-modulate", "100,300,120",
+               "/tmp/bigsister_extract/Convert_Outputs/ColourRemap/remapped_3.png"]
+        output_key: colour_remap_3
+    priority: medium
+
+   # Applies XOR with a fixed value — equivalent to Stegsolve XOR plane views
+  # Reveals data hidden via XOR encoding
+  - name: image_xor_planes
+    trigger:
+      artifact_type: image
+    steps:
+      - tool: convert
+        args: ["-fx", "u^0.5",
+               "/tmp/bigsister_extract/Convert_Outputs/XOR/xor_128.png"]
+        output_key: xor_plane_128
+      - tool: convert
+        args: ["-fx", "u^0.25",
+               "/tmp/bigsister_extract/Convert_Outputs/XOR/xor_64.png"]
+        output_key: xor_plane_64
+    priority: medium
+
+    # Superimposes all channels into a false-colour composite
+  # Replicates Stegsolve "Superimposed" view
+  - name: image_superimpose
+    trigger:
+      artifact_type: image
+    steps:
+      - tool: convert
+        args: ["-separate", "-evaluate-sequence", "add",
+               "/tmp/bigsister_extract/Convert_Outputs/Superimposed/superimposed.png"]
+        output_key: superimposed
+    priority: medium

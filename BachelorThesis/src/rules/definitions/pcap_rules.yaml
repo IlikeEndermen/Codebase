@@ -38,4 +38,20 @@ rules:
     steps:
       - tool: foremost
         output_key: carved_files
-    priority: medium 
+    priority: medium
+
+  - name: pcap_export_tftp_objects
+    trigger:
+      artifact_type: pcap
+    steps:
+      - tool: tshark
+        args: ["-r", "--export-objects", "tftp,/tmp/bigsister_extract/tftp", "-q"]
+        output_key: exported_tftp_objects
+      - tool: strings
+        args: ["-n", "4"]
+        input_key: exported_tftp_objects
+        output_key: tftp_strings
+      - tool: grep
+        args: ["-iE", 'flag\{|CTF\{|HTB\{|THM\{|picoCTF\{|[A-Z0-9_]{2,10}\{[A-Za-z0-9_\-]+\}']
+        output_key: flag_candidates
+    priority: high
