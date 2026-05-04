@@ -35,13 +35,31 @@ class RuleEngine:
     VALID_PRIORITIES = set(PRIORITY_ORDER.keys())
 
     ARTIFACT_TYPES = {
-        "image/png": "image",
-        "image/jpeg": "image",
-        "application/pcap": "pcap",
-        "application/zip": "archive",
-        "application/x-rar": "archive",
-        "application/gzip": "archive",
-        "application/octet-stream": "binary",
+       # Images
+    "image/png":                    "image",
+    "image/jpeg":                   "image",
+    "image/gif":                    "image",
+    "image/bmp":                    "image",
+    "image/webp":                   "image",
+
+    # PCAP
+    "application/pcap":             "pcap",
+
+    # Archives
+    "application/zip":              "archive",
+    "application/x-rar":            "archive",
+    "application/x-7z-compressed":  "archive",
+    "application/gzip":             "archive",
+    "application/x-bzip2":          "archive",
+    "application/x-tar":            "archive",
+
+    # Binary — this was the missing entry
+    "binary":                       "binary",
+    "application/octet-stream":     "binary",
+    "application/x-executable":     "binary",
+    "application/x-sharedlib":      "binary",
+    "application/x-object":         "binary",
+    "application/x-dosexec":        "binary",
     }
 
     def __init__(self, rules_dir: str = "src/rules/definitions"):

@@ -25,6 +25,9 @@ MIME_LABELS: dict[str, str] = {
     "application/x-rar":        "RAR Archive",
     "application/gzip":         "GZIP Archive",
     "application/octet-stream": "Raw Binary / Unknown",
+    "text/plain":              "binary", # .bin, .txt
+    "application/octet-stream": "binary", # fallback for unknown types
+    "inode/x-empty":           "binary", #empty files are common in CTFs, treat as binary
 }
 
 
@@ -52,6 +55,16 @@ MIME_NORMALIZATION: dict[str, str] = {
 
     # GZIP
     "application/x-gzip":           "application/gzip",
+
+     # Binary / unknown — route everything unrecognised to binary ruleset
+    "application/octet-stream":     "binary",
+    "inode/x-empty":                "binary",
+    "text/plain":                   "binary",  # .bin files with ASCII content
+    "text/html":                    "binary",  # corrupted/misidentified files
+    "application/x-executable":    "binary",
+    "application/x-sharedlib":     "binary",
+    "application/x-object":        "binary",
+    "application/x-dosexec":       "binary",  # Windows PE/.exe files
 }
 
 
@@ -59,9 +72,32 @@ MIME_NORMALIZATION: dict[str, str] = {
 # Used when libmagic returns application/octet-stream but the description
 # string still identifies the format (e.g. pcapng files).
 DESCRIPTION_NORMALIZATION: dict[str, str] = {
-    "pcapng capture file":  "application/pcap",
-    "pcap capture file":    "application/pcap",
-    "tcpdump capture file": "application/pcap",
+    # PCAP variants
+    "pcapng capture file":          "application/pcap",
+    "pcap capture file":            "application/pcap",
+    "tcpdump capture file":         "application/pcap",
+
+    # Image formats that libmagic sometimes misidentifies
+    "png image data":               "image/png",
+    "jpeg image data":              "image/jpeg",
+    "gif image data":               "image/gif",
+    "bitmap image":                 "image/bmp",
+    "pc bitmap":                    "image/bmp",
+
+    # Archive formats
+    "zip archive data":             "application/zip",
+    "rar archive data":             "application/x-rar",
+    "7-zip archive data":           "application/x-7z-compressed",
+    "gzip compressed data":         "application/gzip",
+    "bzip2 compressed data":        "application/x-bzip2",
+    "posix tar archive":            "application/x-tar",
+
+    # Binary / unknown — anything unrecognised goes to binary rules
+    "data":                         "binary",
+    "ascii text":                   "binary",
+    "utf-8 unicode text":           "binary",
+    "very short file":              "binary",
+    "empty":                        "binary",
 }
 
 
