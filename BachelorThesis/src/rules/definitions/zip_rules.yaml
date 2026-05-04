@@ -90,3 +90,30 @@ rules:
         args: ["-n", "4"]
         output_key: raw_strings
     priority: medium
+
+  - name: zip_binwalk_scan
+    trigger:
+      artifact_type: archive
+    steps:
+      - tool: binwalk
+        args: ["-v"]
+        output_key: binwalk_scan
+    priority: high
+
+  - name: zip_binwalk_extraction
+    trigger:
+      artifact_type: archive
+    steps:
+      - tool: binwalk
+        args: ["-M", "-e", "-C", "/tmp/bigsister_extract"]
+        output_key: binwalk_extraction
+    priority: medium
+
+  - name: zip_entropy_analysis
+    trigger:
+      artifact_type: archive
+    steps:
+      - tool: binwalk
+        args: ["-E", "-J"]
+        output_key: entropy_analysis
+    priority: medium

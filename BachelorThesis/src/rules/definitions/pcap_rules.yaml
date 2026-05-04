@@ -80,3 +80,30 @@ rules:
       args: ["-oE", "[A-Za-z0-9+/]{20,}={0,2}"]
       output_key: base64_candidates
     priority: high
+
+  - name: pcap_binwalk_scan
+    trigger:
+      artifact_type: pcap
+    steps:
+      - tool: binwalk
+        args: ["-v"]
+        output_key: binwalk_scan
+    priority: high
+
+  - name: pcap_binwalk_extraction
+    trigger:
+      artifact_type: pcap
+    steps:
+      - tool: binwalk
+        args: ["-M", "-e", "-C", "/tmp/bigsister_extract"]
+        output_key: binwalk_extraction
+    priority: medium
+
+  - name: pcap_entropy_analysis
+    trigger:
+      artifact_type: pcap
+    steps:
+      - tool: binwalk
+        args: ["-E", "-J"]
+        output_key: entropy_analysis
+    priority: medium
