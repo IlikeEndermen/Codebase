@@ -16,7 +16,7 @@ rules:
       artifact_type: pcap
     steps:
       - tool: tshark
-        args: ["-r", "-z", "follow,tcp,ascii,0", "-q"]
+        args: ["-r", "{file}", "-z", "follow,tcp,ascii,0", "-q"]
         output_key: tcp_streams
       - tool: grep
         args: ["-iE", 'flag\{|CTF\{|HTB\{|THM\{|picoCTF\{|[A-Z0-9_]{2,10}\{[A-Za-z0-9_\-]+\}']
@@ -28,7 +28,7 @@ rules:
       artifact_type: pcap
     steps:
       - tool: tshark
-        args: ["-r", "-Y", "http || ftp || telnet", "-T", "fields", "-e", "text"]
+        args: ["-r", "{file}", "-Y", "http || ftp || telnet", "-T", "fields", "-e", "text"]
         output_key: tshark_output
     priority: high
 
@@ -37,6 +37,7 @@ rules:
       file_type: application/pcap
     steps:
       - tool: foremost
+        args: ["-o", "/tmp/bigsister_extract/foremost_pcap", "-T"]
         output_key: carved_files
     priority: medium
 

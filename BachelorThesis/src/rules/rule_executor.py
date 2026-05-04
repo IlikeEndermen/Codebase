@@ -161,6 +161,9 @@ class RuleExecutor:
             # zsteg <args> <file>
             return [executable] + resolved_args + [file_path]
         
+        if any("{file}" in str(arg) for arg in args):
+            return [executable] + resolved_args
+
         # Default: command + args + file
         return [executable] + resolved_args + [file_path]
 
