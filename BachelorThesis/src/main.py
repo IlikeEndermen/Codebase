@@ -18,47 +18,6 @@ logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
-# Legacy helpers (kept for backwards compatibility & direct CLI use)
-# ---------------------------------------------------------------------------
-
-def run_metadata_chain(file_path: str) -> dict:
-    """
-    Original metadata chain: ExifTool → Steghide → Binwalk.
-    Still used by the GUI for image-only workflows.
-    """
-    from metadata.exiftool_scraper import MetadataScraper
-    from steganography.steghide_scraper import SteghideScraper
-    from steganography.binwalk_scraper import BinwalkScraper
-    from metadata.parser import MetadataParser
-
-    parser = MetadataParser()
-    combined: dict = {}
-
-    exif_scraper = MetadataScraper()
-    raw_exif = exif_scraper.scrape(file_path)
-    exif_scraper.display_metadata(raw_exif)
-    combined.update(parser.parse_exif(raw_exif))
-
-    steg_scraper = SteghideScraper()
-    raw_steg = steg_scraper.scrape(file_path)
-    steg_scraper.display_metadata(raw_steg)
-    combined.update(parser.parse_steghide(raw_steg))
-
-    bw_scraper = BinwalkScraper()
-    raw_bw = bw_scraper.scrape(file_path, extract=False)
-    bw_scraper.display_metadata(raw_bw)
-    combined.update(parser.parse_binwalk(raw_bw))
-
-    return combined
-
-
-def run_image_search(file_path: str) -> None:
-    from iris.image_search import ImageSearchIRIS
-    searcher = ImageSearchIRIS()
-    searcher.display_results(searcher.search_image(file_path))
-
-
-# ---------------------------------------------------------------------------
 # New rule-based analysis
 # ---------------------------------------------------------------------------
 
